@@ -36,6 +36,31 @@ def bfs(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     # TODO: Write your code here
+
+    queue = []
+    visited = []
+    path = []
+
+    queue.append(maze.getStart())
+
+    while queue:
+        cur_pos = queue.pop(0)
+        print(cur_pos)
+        cur_row, cur_col = cur_pos
+
+        if cur_pos in visited:
+            continue
+
+        visited.append(cur_pos)
+        path.append(cur_pos)
+
+        if cur_pos in maze.getObjectives():
+            print(path)
+            return path
+        else:
+            for pos in maze.getNeighbors(cur_row,cur_col):
+                queue.append(pos)
+
     return []
 
 
