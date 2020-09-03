@@ -36,30 +36,32 @@ def bfs(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     # TODO: Write your code here
+    from collections import deque
 
-    queue = []
+    queue = deque([])
     visited = []
     path = []
 
-    queue.append(maze.getStart())
+    path.append(maze.getStart())
+    queue.append(path)
 
     while queue:
-        cur_pos = queue.pop(0)
-        print(cur_pos)
+        cur_path = queue.popleft()
+        cur_pos = cur_path[len(cur_path)-1]
+    
         cur_row, cur_col = cur_pos
 
-        if cur_pos in visited:
-            continue
-
         visited.append(cur_pos)
-        path.append(cur_pos)
 
         if cur_pos in maze.getObjectives():
-            print(path)
-            return path
+            return cur_path
+
         else:
             for pos in maze.getNeighbors(cur_row,cur_col):
-                queue.append(pos)
+                if pos in visited:
+                    continue
+                temp_path = cur_path + [pos]
+                queue.append(temp_path)
 
     return []
 
@@ -73,6 +75,9 @@ def astar(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     # TODO: Write your code here
+    
+    
+
     return []
 
 def astar_corner(maze):
