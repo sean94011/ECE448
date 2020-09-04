@@ -118,7 +118,7 @@ def astar(maze):
     while cur_pos != None:
         path.append(cur_pos)
         cur_pos = predecessor[cur_pos]
-    path.reverse
+    path.reverse()
     return path
 
 def astar_corner(maze):
