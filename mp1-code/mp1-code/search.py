@@ -54,13 +54,14 @@ def bfs(maze):
         visited.append(cur_pos)
 
         if cur_pos in maze.getObjectives():
+            print(cur_path)
             return cur_path
 
         else:
-            for pos in maze.getNeighbors(cur_row,cur_col):
-                if pos in visited:
+            for next_pos in maze.getNeighbors(cur_row,cur_col):
+                if next_pos in visited:
                     continue
-                temp_path = cur_path + [pos]
+                temp_path = cur_path + [next_pos]
                 queue.append(temp_path)
 
     return []
@@ -78,16 +79,47 @@ def astar(maze):
 
     from queue import PriorityQueue
 
+    start_pos = maze.getStart()
+
     frontier = PriorityQueue()
-    frontier.put(maze.getStart(),0)
+    frontier.put(start_pos,0)
 
     
+    predecessor = dict()
+    predecessor[start_pos] = None
 
-    wh
+    cost = dict()
+    cost[start_pos] = 0
+    
+    goals = maze.getObjectives()
+    goal_pos = goals[0]
+    goal_row, goal_col = goal_pos
 
+    while not frontier.empty():
+        cur_pos = frontier.get()
+        cur_row, cur_col = cur_pos
 
+        if cur_pos in maze.getObjectives():
+            break
 
-    return []
+        for next_pos in maze.getNeighbors(cur_row,cur_col):
+            next_row, next_col = next_pos
+            if not maze.isValidMove(next_row, next_col):
+                continue
+            temp_cost = cost[cur_pos] + abs(cur_row-next_row) + abs(cur_col-next_col)
+            if next_pos not in cost or temp_cost < cost[next_pos]:
+                cost[next_pos] = temp_cost
+                f = temp_cost + abs(goal_row-next_row) + abs(goal_col-next_col)
+                frontier.put(next_pos,f)
+                predecessor[next_pos] = cur_pos
+                print(predecessor)
+
+    path = []
+    while cur_pos != None:
+        path.append(cur_pos)
+        cur_pos = predecessor[cur_pos]
+    path.reverse
+    return path
 
 def astar_corner(maze):
     """
