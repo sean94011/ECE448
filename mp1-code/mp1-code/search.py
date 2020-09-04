@@ -40,29 +40,63 @@ def bfs(maze):
 
     queue = deque([])
     visited = []
+    predecessor = dict()
     path = []
 
-    path.append(maze.getStart())
-    queue.append(path)
+    start_pos = maze.getStart()
+
+    queue.append(start_pos)
+    predecessor[start_pos] = None
 
     while queue:
-        cur_path = queue.popleft()
-        cur_pos = cur_path[len(cur_path)-1]
-    
+        cur_pos = queue.popleft()
         cur_row, cur_col = cur_pos
-
         visited.append(cur_pos)
 
         if cur_pos in maze.getObjectives():
-            print(cur_path)
-            return cur_path
+            break
 
-        else:
-            for next_pos in maze.getNeighbors(cur_row,cur_col):
-                if next_pos in visited:
-                    continue
-                temp_path = cur_path + [next_pos]
-                queue.append(temp_path)
+        for next_pos in maze.getNeighbors(cur_row, cur_col):
+            if next_pos in visited:
+                continue
+            predecessor[next_pos] = cur_pos
+            queue.append(next_pos)
+
+    while cur_pos != None:
+        path.append(cur_pos)
+        cur_pos = predecessor[cur_pos]
+    path.reverse()
+
+    return path
+    # from collections import deque
+
+    # queue = deque([])
+    # visited = []
+    # path = []
+
+    # path.append(maze.getStart())
+    # queue.append(path)
+    # counter = 0
+
+    # while queue and counter < 1000:
+    #     counter = counter + 1
+    #     cur_path = queue.popleft()
+    #     cur_pos = cur_path[len(cur_path)-1]
+    
+    #     cur_row, cur_col = cur_pos
+
+    #     visited.append(cur_pos)
+
+    #     if cur_pos in maze.getObjectives():
+    #         print(cur_path)
+    #         return cur_path
+
+    #     else:
+    #         for next_pos in maze.getNeighbors(cur_row,cur_col):
+    #             if next_pos in visited:
+    #                 continue
+    #             temp_path = cur_path + [next_pos]
+    #             queue.append(temp_path)
 
     return []
 
