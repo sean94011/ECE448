@@ -75,8 +75,17 @@ def astar(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     # TODO: Write your code here
+
+    from queue import PriorityQueue
+
+    frontier = PriorityQueue()
+    frontier.put(maze.getStart(),0)
+
     
-    
+
+    wh
+
+
 
     return []
 
