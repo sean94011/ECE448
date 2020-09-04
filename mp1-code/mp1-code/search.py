@@ -112,7 +112,6 @@ def astar(maze):
                 f = temp_cost + abs(goal_row-next_row) + abs(goal_col-next_col)
                 frontier.put(next_pos,f)
                 predecessor[next_pos] = cur_pos
-                print(predecessor)
 
     path = []
     while cur_pos != None:
