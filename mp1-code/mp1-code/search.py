@@ -37,75 +37,35 @@ def bfs(maze):
     """
     # TODO: Write your code here
     # from collections import deque
-
-    # queue = deque([])
-    # visited = []
-    # predecessor = dict()
-    # path = []
-
-    # start_pos = maze.getStart()
-
-    # queue.append(start_pos)
-    # predecessor[start_pos] = None
-
-    # while queue:
-    #     cur_pos = queue.popleft()
-    #     cur_row, cur_col = cur_pos
-    #     visited.append(cur_pos)
-
-    #     if cur_pos in maze.getObjectives():
-    #         break
-
-    #     for next_pos in maze.getNeighbors(cur_row, cur_col):
-    #         if cur_pos not in queue:
-    #             predecessor[next_pos] = cur_pos
-    #             queue.append(next_pos)
-
-    # while cur_pos != None:
-    #     path.append(cur_pos)
-    #     cur_pos = predecessor[cur_pos]
-    # path.reverse()
-
-    # return path
     
-    print(maze.getObjectives())
-
-    queue = []
+    queue =[]
     visited = []
-    predecessor = dict()
-
-    start_pos = maze.getStart()
-
-    queue.append(maze.getStart())
-    predecessor[start_pos] = None
-    counter = 0
-
-    while queue and counter < 1000:
-        counter = counter + 1
-        cur_pos = queue.pop(0)
-        # print(predecessor)
-
-        visited.append(cur_pos)
-
+    path = []
     
+    start_pos = maze.getStart()
+    goal_pos = maze.getObjectives()
+    
+    path.append(start_pos)
+    queue.append(path)
+
+    if start_pos in goal_pos:
+        return path
+    
+    while queue:
+        cur_path = queue.pop(0)
+        cur_pos = cur_path[len(cur_path)-1]
         cur_row, cur_col = cur_pos
 
-
-        if cur_pos in maze.getObjectives():
-            path = []
-            while cur_pos != None:
-                path.append(cur_pos)
-                cur_pos = predecessor[cur_pos]
-            path.reverse()
-            return path
+        if cur_pos in visited:
+            continue
         else:
             for next_pos in maze.getNeighbors(cur_row,cur_col):
-                
-                if next_pos in visited:
-                    continue
-                predecessor[next_pos] = cur_pos
-                queue.append(next_pos)
-
+                temp_path = cur_path + [next_pos]
+                if next_pos in goal_pos:
+                    return temp_path
+                queue.append(temp_path)
+            visited.append(cur_pos)
+       
     return []
 
 
