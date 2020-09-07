@@ -259,7 +259,7 @@ def astar_corner(maze):
         for next_pos in maze.getNeighbors(cur_row,cur_col):         
             if next_pos in states[prev_goal]:
                 continue
-            
+            #try
             next_row, next_col = next_pos
             # print(prev_goal)
             print(cur_pos)
@@ -267,7 +267,7 @@ def astar_corner(maze):
             temp_cost = cost[(cur_pos,prev_goal)] + m_dist(cur_row, cur_col, next_row, next_col)
             if (next_pos,prev_goal) not in cost or temp_cost < cost[next_pos, prev_goal]:
                 cost[next_pos,prev_goal] = temp_cost
-                q = temp_cost
+                q = temp_costs
                 temp_dist, temp_nearnest_goal = find_nearnest_goal(next_pos, unfound_goals)
                 f = temp_cost #+ temp_dist + mst_cost(temp_nearnest_goal, unfound_goals)
                 # print(cur_pos)
