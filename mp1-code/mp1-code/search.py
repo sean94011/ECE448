@@ -39,10 +39,10 @@ def mst_cost(start_node, objectives):
     predecessor = dict()
     visited = []
 
-    graph = objectives
+    graph = objectives[:]
 
     for vertex in graph:
-        dist[vertex] = float("inf")
+        dist[vertex] = float('inf')
         predecessor[vertex] = None
 
     dist[start_node] = 0
@@ -51,7 +51,7 @@ def mst_cost(start_node, objectives):
     hq.heapify(pqueue)
     hq.heappush(pqueue, (dist[start_node],start_node))
 
-    for i in range(len(graph)):
+    while pqueue:
         if not pqueue:
             break
         temp = hq.heappop(pqueue)
@@ -65,19 +65,59 @@ def mst_cost(start_node, objectives):
 
             v_row, v_col = v
             cur_row, cur_col = cur_node
-            temp_cost = m_dist(v_row, v_col, cur_row, cur_col)
-
+            temp_cost = m_dist(cur_row, cur_col, v_row, v_col)
             if(temp_cost < dist[v]):
                 dist[v] = temp_cost
                 predecessor[v] = cur_node
                 hq.heappush(pqueue, (dist[v], v))
     
-    # total_cost = sum(dist.values())
     total_cost = 0
     for v in dist:
         total_cost = total_cost + dist[v]
-    # print(total_cost)
 
+    return total_cost
+
+def mst_cost_multi(edge_weight, start_node, objectives):
+    dist = dict()
+    predecessor = dict()
+    visited = []
+
+    graph = objectives[:]
+
+    for vertex in graph:
+        dist[vertex] = float('inf')
+        predecessor[vertex] = None
+
+    dist[start_node] = 0
+    
+    pqueue = []
+    hq.heapify(pqueue)
+    hq.heappush(pqueue, (dist[start_node],start_node))
+
+    while pqueue:
+        if not pqueue:
+            break
+        temp = hq.heappop(pqueue)
+        cur_dist, cur_node = temp
+
+        visited.append(cur_node)
+
+        for v in graph:
+            if v in visited:
+                continue
+
+            v_row, v_col = v
+            cur_row, cur_col = cur_node
+            temp_cost = edge_weight[cur_node,v]
+            if(temp_cost < dist[v]):
+                dist[v] = temp_cost
+                predecessor[v] = cur_node
+                hq.heappush(pqueue, (dist[v], v))
+    
+
+    total_cost = 0
+    for v in dist:
+        total_cost = total_cost + dist[v]
     return total_cost
 
 
@@ -171,9 +211,9 @@ def astar(maze):
             temp_cost = cost[cur_pos] + m_dist(cur_row, cur_col, next_row, next_col)
             if next_pos not in cost or temp_cost < cost[next_pos]:
                 cost[next_pos] = temp_cost
-                q = temp_cost
+                g = temp_cost
                 f = temp_cost + m_dist(goal_row, goal_col, next_row, next_col)
-                hq.heappush(frontier,(f,q, next_pos))
+                hq.heappush(frontier,(f,g, next_pos))
                 predecessor[next_pos] = cur_pos
         visited.append(cur_pos)
 
@@ -191,13 +231,26 @@ def find_nearest_goal(cur_node, goals):
     cur_dist, nearest_goal = hq.heappop(goal_list)
     return cur_dist, nearest_goal
 
+
 class state:
+    def __init__(self, position, unfound_goals, path):
+        self.position = position
+        self.unfound_goals = unfound_goals
+        self.path = path
+
+
+    def __lt__(self, other):
+        return len(self.unfound_goals) < len(other.unfound_goals)
+
+class state_multi:
     def __init__(self, position, unfound_goals):
         self.position = position
         self.unfound_goals = unfound_goals
 
+
     def __lt__(self, other):
-        return self.position < other.position
+        return len(self.unfound_goals) < len(other.unfound_goals)
+
 
 
 def astar_corner(maze):
@@ -213,253 +266,46 @@ def astar_corner(maze):
     start_pos = maze.getStart()
     unfound_goals = maze.getObjectives()
 
-    path = []
+    start_state = state(start_pos, unfound_goals, [start_pos])
+
     visited = []
-    path.append(start_pos)
 
-    cur_pos = start_pos
+    frontier = []
+    hq.heapify(frontier)
+    hq.heappush(frontier, (0,0,start_state))
 
-    while unfound_goals:
-        frontier = []
-        hq.heapify(frontier)
-        predecessor = dict()
-        temp_dist, temp_nearest_goal = find_nearest_goal(cur_pos, unfound_goals)
-        unfound_goals.remove(temp_nearest_goal)
-        start_node = (m_dist(cur_pos[0],cur_pos[1],temp_nearest_goal[0],temp_nearest_goal[1]),0,cur_pos)
-        hq.heappush(frontier,start_node)
-        predecessor[cur_pos] = cur_pos
+    closed = []
 
-        while frontier:
-            min_node = hq.heappop(frontier)
-            temp, cost, cur_pos = min_node
-            if cur_pos == temp_nearest_goal:
-                temp_pos = cur_pos
-                while predecessor[temp_pos] != temp_pos:
-                    path.append(temp_pos)
-                    temp_pos = predecessor[temp_pos]
-                path.append(temp_pos)
-                path.reverse()
-                break
+    cost = dict()
+    cost[(start_state.position, tuple(start_state.unfound_goals))] = 0
+
+    while frontier:
+        cur_f, cur_q, cur_state = hq.heappop(frontier)
+        cur_pos = cur_state.position
+        cur_row, cur_col = cur_pos
+        cur_unfound_goals = []
+        for i in cur_state.unfound_goals:
+            cur_unfound_goals.append(i)
+
+        if (cur_state.position,cur_state.unfound_goals) in visited:
+            continue
+        visited.append((cur_state.position,cur_state.unfound_goals))
+        
+        if cur_pos in cur_state.unfound_goals:
+            cur_unfound_goals.remove(cur_pos)
+            if len(cur_unfound_goals) == 0:
+                return cur_state.path
             
-            for next_pos in maze.getNeighbors(cur_pos[0],cur_pos[1]):
-                if next_pos not in predecessor:
-                    hq.heappush(frontier, (cost+m_dist(next_pos[0],next_pos[1],temp_nearest_goal[0],temp_nearest_goal[1]), cost+1,next_pos))
-                    predecessor[next_pos] = cur_pos
-    
-    return path
-
-
-
-    # start_pos = maze.getStart()
-    # unfound_goals = maze.getObjectives()
-
-    # start_state = state(start_pos, unfound_goals)
-
-    # visited = []
-
-    # frontier = []
-    # hq.heapify(frontier)
-    # hq.heappush(frontier, (0,0,start_state))
-
-    
-    # predecessor = dict()
-    # predecessor[start_state] = None
-
-    # cost = dict()
-    # cost[start_state] = 0
-    # outer_counter = 0
-    # while frontier: #and outer_counter < 1000:
-    #     outer_counter += 1
-    #     cur_f, cur_q, cur_state = hq.heappop(frontier)
-    #     cur_pos = cur_state.position
-    #     cur_row, cur_col = cur_pos
-
-    #     if cur_state in visited:
-    #         continue
-        
-    #     if cur_pos in cur_state.unfound_goals:
-    #         cur_state.unfound_goals.remove(cur_pos)
-    #         if len(cur_state.unfound_goals) == 0:
-    #             path = []
-    #             while cur_state != None:
-    #                 path.append(cur_state.position)
-    #                 cur_state = predecessor[cur_state]
-    #             path.reverse()
-    #             print(path)
-    #             return path
-            
-    #     counter = 0
-    #     for next_pos in maze.getNeighbors(cur_row,cur_col):
-    #         counter += 1
-    #         # if counter > 1000:
-    #         #     break
-    #         next_state = state(next_pos, cur_state.unfound_goals)
-    #         next_row, next_col = next_pos
-    #         temp_cost = cost[cur_state] + m_dist(cur_row, cur_col, next_row, next_col)
-    #         if next_state not in cost or temp_cost < cost[next_state]:
-    #             cost[next_state] = temp_cost
-    #             q = temp_cost
-    #             temp_dist, temp_nearest_goal = find_nearest_goal(next_pos, cur_state.unfound_goals)
-    #             f = temp_cost + temp_dist + mst_cost(temp_nearest_goal, cur_state.unfound_goals) #temp_dist: distance from next_pos to the nearest goal
-    #             hq.heappush(frontier,(f,q, next_state))
-    #             predecessor[next_state] = cur_state
-    #         print((next_state.position,next_state.unfound_goals,predecessor[next_state], next_state))
-    #     visited.append(cur_state)
-    # return []
-
-    # start_pos = maze.getStart()
-    # unfound_goals = maze.getObjectives()
-
-    # start_state = state(start_pos, unfound_goals, [start_pos])
-    
-
-    # visited = []
-
-    # cost = dict()
-    # cost[start_state] = 0
-
-    # predecessor = dict()
-    # predecessor[start_state] = None
-
-    # frontier = []
-    # hq.heapify(frontier)
-    # hq.heappush(frontier, (0, 0, len(start_state.path), start_state))
-
-    # # print((start_state.position, start_state.unfound_goals,predecessor[start_state], start_state))
-
-    # while frontier:
-    #     cur_f, cur_g, cur_path_len, cur_state = hq.heappop(frontier)
-
-    #     if(cur_state in visited):
-    #         continue
-        
-
-    #     cur_pos = cur_state.position
-    #     cur_row, cur_col = cur_pos
-    #     cur_unfound_goals = cur_state.unfound_goals
-    #     cur_path = cur_state.path
-        
-    #     if cur_pos in cur_unfound_goals:
-
-    #         cur_unfound_goals.remove(cur_pos)
-    #         # print((cur_state.position, cur_state.unfound_goals))
-    #         # print(cur_unfound_goals)
-    #         if(len(cur_unfound_goals) == 0):
-    #             # path = []
-    #             print('path')
-    #             # while cur_state != None:
-    #             #     print((cur_state.position, cur_state.unfound_goals, predecessor[cur_state], cur_state))
-    #             #     path.append(cur_state.position)
-    #             #     cur_state = predecessor[cur_state]
-    #             # path.reverse()
-    #             print(cur_path)
-    #             return cur_path
-        
-    #     for next_pos in maze.getNeighbors(cur_row,cur_col):
-    #         next_state = state(next_pos, cur_unfound_goals, cur_path+[next_pos])
-    #         print((next_state.position,next_state.unfound_goals))
-    #         print(next_state.path)
-    #         next_row, next_col = next_pos
-    #         temp_cost = cost[cur_state] + m_dist(cur_row, cur_col, next_row, next_col)
-    #         if next_state not in cost or temp_cost < cost[next_state]:
-    #             cost[next_state] = temp_cost
-    #             q = temp_cost
-    #             temp_dist, temp_nearest_goal = find_nearest_goal(next_pos, cur_unfound_goals)
-    #             f = temp_cost + temp_dist #+ mst_cost(temp_nearest_goal, cur_unfound_goals)
-    #             hq.heappush(frontier,(f,q,len(next_state.path), next_state)) 
-    #             #predecessor[next_state] = cur_state
-    #         # print((next_state.position,next_state.unfound_goals,predecessor[next_state], next_state))
-        
-    #     visited.append(cur_state)
-
-
-            
-        
-    # start_pos = maze.getStart()
-    # goals = maze.getObjectives()
-    # unfound_goals = goals
-
-    # prev_goal = None
-
-    # frontier = []
-    # hq.heapify(frontier)
-    # hq.heappush(frontier, (0,0,[start_pos],unfound_goals))
-
-    
-    # predecessor = dict() # key: (pos,prev_goal) / (prev_pos)
-    # predecessor[start_pos, prev_goal] = None
-
-    # cost = dict()
-    # cost[(start_pos)] = 0
-
-    # states = dict() # key: prev_goal / visited
-    # cur_goal = find_nearest_goal(start_pos, unfound_goals)
-    # states[prev_goal] = [start_pos]
-    # new_prev_goal = None
-
-    # goal_found = []
-
-
-    # while frontier:
-    #     # print(frontier)
-    #     # print(unfound_goals)
-    #     cur_f, cur_q, cur_pos, prev_goal = hq.heappop(frontier)
-    #     print(cur_pos)
-    #     cur_row, cur_col = cur_pos
-    #     if cur_pos in unfound_goals:
-            
-    #         unfound_goals.remove(cur_pos)
-    #         if len(unfound_goals) > 0:
-    #             new_prev_goal = cur_pos
-    #             states[new_prev_goal] = []
-    #             goal_found.append(cur_pos)
-    #             cost[(cur_pos,new_prev_goal)] = 0
-    #         else:
-    #             path = []
-    #             # print(predecessor)
-    #             while prev_goal != None:
-    #                 while cur_pos != None:
-    #                     path.append(cur_pos)
-    #                     cur_pos = predecessor[cur_pos, prev_goal]
-    #                 cur_pos = prev_goal
-    #                 temp, prev_goal = predecessor[-1]
-    #             while cur_pos != None:
-    #                 path.append(cur_pos)
-    #                 cur_pos = predecessor[cur_pos, prev_goal]
-    #             path.reverse()
-    #             # print(path)
-    #             return path
-
-    #     for next_pos in maze.getNeighbors(cur_row,cur_col):         
-    #         if next_pos in states[prev_goal]:
-    #             continue
-
-    #         next_row, next_col = next_pos
-    #         # print(prev_goal)
-    #         print(cur_pos)
-    #         print(prev_goal)
-    #         temp_cost = cost[(cur_pos,prev_goal)] + m_dist(cur_row, cur_col, next_row, next_col)
-    #         if (next_pos,prev_goal) not in cost or temp_cost < cost[next_pos, prev_goal]:
-    #             cost[next_pos,prev_goal] = temp_cost
-    #             q = temp_cost
-    #             temp_dist, temp_nearest_goal = find_nearest_goal(next_pos, unfound_goals)
-    #             f = temp_cost + temp_dist + mst_cost(temp_nearest_goal, unfound_goals)
-    #             # print(cur_pos)
-    #             # print(goal_found)
-    #             hq.heqppush(frontier,(f,q,next_pos, unfound_goals))
-    #             if cur_pos in goal_found:
-    #                 # print(cur_pos)
-    #                 hq.heappush(frontier,(f,q, next_pos, new_prev_goal))
-    #                 predecessor[next_pos, new_prev_goal] = cur_pos
-    #             else:
-    #                 hq.heappush(frontier,(f,q, next_pos, prev_goal))
-    #                 predecessor[next_pos, prev_goal] = cur_pos
-    #     if cur_pos in goal_found:
-            
-    #         states[new_prev_goal].append(cur_pos)
-
-    #     else:
-    #         states[prev_goal].append(cur_pos)
+        for next_pos in maze.getNeighbors(cur_row,cur_col):
+            next_state = state(next_pos, cur_unfound_goals, cur_state.path+[next_pos])
+            next_row, next_col = next_pos
+            temp_cost = cost[(cur_state.position,tuple(cur_state.unfound_goals))] + m_dist(cur_row, cur_col, next_row, next_col)
+            if (next_state.position,tuple(next_state.unfound_goals)) not in cost or temp_cost < cost[(next_state.position,tuple(next_state.unfound_goals))]:
+                cost[(next_state.position,tuple(next_state.unfound_goals))] = temp_cost
+                g = temp_cost
+                temp_dist, temp_nearest_goal = find_nearest_goal(next_pos, cur_unfound_goals)
+                f = temp_cost + temp_dist + mst_cost(temp_nearest_goal, cur_unfound_goals) #temp_dist: distance from next_pos to the nearest goal
+                hq.heappush(frontier,(f,g, next_state))
 
     return []
 
@@ -473,7 +319,185 @@ def astar_multi(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     # TODO: Write your code here
+
+    start_pos = maze.getStart()
+    unfound_goals = maze.getObjectives()
+
+
+    temp_goals = maze.getObjectives()
+
+    mst = dict()
+    nearest_neighbor = dict()
+    
+    
+
+    start_state = state_multi(start_pos, unfound_goals)
+
+    visited = []
+    predecessor = dict()
+
+    frontier = []
+    hq.heapify(frontier)
+    hq.heappush(frontier, (0,0,start_state))
+
+    predecessor[(start_pos,tuple(unfound_goals))] = None
+
+    edge_weight = dict()
+    for i in unfound_goals:
+        for j in unfound_goals:
+            edge_weight[i,j] = len(astar_fast(maze,i,j))
+
+    cost = dict()
+    cost[(start_state.position, tuple(start_state.unfound_goals))] = 0
+    outer_counter = 0
+    while frontier:
+
+        cur_f, cur_q, cur_state = hq.heappop(frontier)
+        cur_pos = cur_state.position
+        cur_row, cur_col = cur_pos
+        cur_unfound_goals = cur_state.unfound_goals[:]
+
+        if (cur_state.position,tuple(cur_unfound_goals)) in visited:
+            continue
+        visited.append((cur_state.position,tuple(cur_unfound_goals)))
+
+        if cur_pos in cur_unfound_goals:
+            cur_unfound_goals.remove(cur_pos)
+            if len(cur_unfound_goals) == 0:
+                path = []
+                cur_unfound_goals.append(cur_pos)
+                temp_cur_unfound_goals = tuple(cur_unfound_goals)
+                temp_tuple = (cur_pos, temp_cur_unfound_goals)
+                while temp_tuple != None:
+                    path.append(temp_tuple[0])
+                    temp_tuple = predecessor[temp_tuple]
+                path.reverse()
+                return path
+
+        for next_pos in maze.getNeighbors(cur_row,cur_col):
+            next_state = state_multi(next_pos, cur_unfound_goals)
+            if (next_state.position, tuple(next_state.unfound_goals)) in visited:
+                continue
+            next_row, next_col = next_pos
+
+            temp_cost = cost[(cur_state.position,tuple(cur_state.unfound_goals))] + m_dist(cur_row, cur_col, next_row, next_col)
+            temp_next_unfound_goals = next_state.unfound_goals
+            if (next_state.position,tuple(temp_next_unfound_goals)) not in cost or temp_cost < cost[(next_state.position,tuple(temp_next_unfound_goals))]:
+                cost[(next_state.position,tuple(temp_next_unfound_goals))] = temp_cost
+                g = temp_cost
+                temp_dist, temp_nearest_goal = find_nearest_goal(next_pos, cur_unfound_goals)
+                if (tuple(cur_unfound_goals)) not in mst:
+                    mst[tuple(cur_unfound_goals)] = mst_cost_multi(edge_weight, cur_unfound_goals[0], cur_unfound_goals)
+                cur_mst_cost = mst[tuple(cur_unfound_goals)]
+                f = temp_cost + temp_dist + cur_mst_cost
+                hq.heappush(frontier,(f,g, next_state))
+                predecessor[(next_state.position, tuple(next_state.unfound_goals))] = (cur_state.position ,tuple(cur_state.unfound_goals))
     return []
+
+def build_mst(maze, start_node, objectives):
+    dist = dict()
+    predecessor = dict()
+    visited = []
+
+    graph = objectives + [start_node]
+
+    for vertex in graph:
+        dist[vertex] = float("inf")
+        predecessor[vertex] = None
+
+    dist[start_node] = 0
+    
+    pqueue = []
+    hq.heapify(pqueue)
+    hq.heappush(pqueue, (dist[start_node],start_node))
+
+    while pqueue:
+        if not pqueue:
+            break
+        temp = hq.heappop(pqueue)
+        cur_dist, cur_node = temp
+
+        visited.append(cur_node)
+
+        for v in graph:
+            if v in visited:
+                continue
+
+            v_row, v_col = v
+            cur_row, cur_col = cur_node
+            temp_cost = len(astar_fast(maze, v, cur_node))
+
+            if(temp_cost < dist[v]):
+                dist[v] = temp_cost
+                predecessor[v] = cur_node
+                hq.heappush(pqueue, (dist[v], v))
+
+    mst = dict()
+    for vertex in graph:
+        mst[vertex] = []
+    for vertex in graph:
+        if predecessor[vertex] not in mst:
+            mst[predecessor[vertex]] = []
+        mst[predecessor[vertex]].append(vertex)
+
+    return mst
+
+
+def astar_fast(maze, start, goal):
+
+    start_pos = start
+
+    visited = []
+
+    frontier = []
+    hq.heapify(frontier)
+    hq.heappush(frontier, (0,0,start_pos))
+
+    
+    predecessor = dict()
+    predecessor[start_pos] = None
+
+    cost = dict()
+    cost[start_pos] = 0
+    
+    goal_pos = goal
+    goal_row, goal_col = goal_pos
+
+    while frontier:
+        cur_f, cur_q, cur_pos = hq.heappop(frontier)
+        cur_row, cur_col = cur_pos
+
+        if cur_pos in visited:
+            continue
+        
+        if cur_pos == goal_pos:
+            path = []
+            while cur_pos != None:
+                path.append(cur_pos)
+                cur_pos = predecessor[cur_pos]
+            path.reverse()
+            return path
+
+        for next_pos in maze.getNeighbors(cur_row,cur_col):
+            next_row, next_col = next_pos
+            temp_cost = cost[cur_pos] + m_dist(cur_row, cur_col, next_row, next_col)
+            if next_pos not in cost or temp_cost < cost[next_pos]:
+                cost[next_pos] = temp_cost
+                g = temp_cost
+                f = temp_cost + m_dist(goal_row, goal_col, next_row, next_col)
+                hq.heappush(frontier,(f,g, next_pos))
+                predecessor[next_pos] = cur_pos
+        visited.append(cur_pos)
+
+    return []
+
+def traverse(mst, path, cur_pos):
+    path.append(cur_pos)
+    if len(mst[cur_pos]) == 0:
+        return
+    for child in mst[cur_pos]:
+        traverse(mst,path,child)
+        path.append(cur_pos)
 
 
 def fast(maze):
@@ -485,4 +509,34 @@ def fast(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     # TODO: Write your code here
-    return []
+    start_pos = maze.getStart()
+    objectives = maze.getObjectives()
+
+    cur_mst = build_mst(maze,start_pos,objectives)
+
+    graph = [start_pos] + objectives
+    path_between_dots = dict()
+    for i in graph:
+        for j in graph:
+            if i == j:
+                continue
+            temp_path = astar_fast(maze, i, j)
+            temp_path.remove(temp_path[len(temp_path)-1])
+            path_between_dots[(i,j)] = temp_path
+    temp_graph_path = []
+    traverse(cur_mst, temp_graph_path,start_pos)
+
+    graph_path = []
+    for node in temp_graph_path:
+        graph_path.append(node)
+        if node in graph:
+            graph.remove(node)
+        if len(graph) == 0:
+            break
+
+    fast_path = []
+    for i in range(len(graph_path)-1):
+        fast_path.extend(path_between_dots[(graph_path[i],graph_path[i+1])])
+        
+    fast_path.append(graph_path[-1])
+    return fast_path
