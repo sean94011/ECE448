@@ -13,6 +13,7 @@ This file contains geometry functions that relate with Part1 in MP2.
 
 import math
 import numpy as np
+from numpy import linalg as la
 from const import *
 
 def computeCoordinate(start, length, angle):
@@ -26,8 +27,14 @@ def computeCoordinate(start, length, angle):
         Return:
             End position (int,int):of the arm link, (x-coordinate, y-coordinate)
     """
+    # Convert the angle from degree to radian
+    angle_radian = math.radians(angle)
 
-    return (0, 0)
+    # Get the end position with trig functions
+    x = start[0] + int(length*math.cos(angle_radian))
+    y = start[1] - int(length*math.sin(angle_radian))
+
+    return (x,y)
 
 def doesArmTouchObjects(armPosDist, objects, isGoal=False):
     """Determine whether the given arm links touch any obstacle or goal
@@ -41,6 +48,35 @@ def doesArmTouchObjects(armPosDist, objects, isGoal=False):
         Return:
             True if touched. False if not.
     """
+
+    for cur_link in armPosDist:
+        start_pos = np.array(cur_link[0])
+        end_pos = np.array(cur_link[1])
+
+        end_to_start_vect = start_pos - end_pos
+        start_to_end_vect = end_pos - start_pos
+        
+        if isGoal:
+            pad_dist = 0
+        else:
+            pad_dist = cur_link[2]
+
+        for cur_object in objects:
+            object_pos = np.array([cur_object[0],cur_object[1]])
+
+            end_to_obj_vect = object_pos - end_pos
+            start_to_obj_vect = object_pos - start_pos
+
+            if np.inner(end_to_start_vect,end_to_obj_vect) <= 0:
+                link_obj_dist = math.sqrt(pow((end_pos[0]-object_pos[0]),2)+pow((end_pos[1]-object_pos[1]),2))
+            elif np.inner(start_to_end_vect,start_to_obj_vect) <= 0:
+                link_obj_dist = math.sqrt(pow((start_pos[0]-object_pos[0]),2)+pow((start_pos[1]-object_pos[1]),2))
+            else:
+                link_obj_dist = la.norm(np.cross(end_to_start_vect,end_to_obj_vect)) / la.norm(end_to_start_vect)
+
+            if link_obj_dist <= cur_object[2] + pad_dist:
+                    return True
+
     return False
 
 def doesArmTipTouchGoals(armEnd, goals):
@@ -52,6 +88,12 @@ def doesArmTipTouchGoals(armEnd, goals):
         Return:
             True if arm tip touches any goal. False if not.
     """
+
+    for cur_goal in goals:
+        
+        if pow((cur_goal[0]-armEnd[0]),2) + pow((cur_goal[1]-armEnd[1]),2) <= pow(cur_goal[2],2):
+            return True
+
     return False
 
 
@@ -65,6 +107,21 @@ def isArmWithinWindow(armPos, window):
         Return:
             True if all parts are in the window. False if not.
     """
+    for cur_link in armPos:
+        start_pos = cur_link[0]
+        end_pos = cur_link[1]
+
+        if start_pos[0] < 0 or start_pos[0] > window[0]:
+            return False
+        elif start_pos[1] < 0 or start_pos[1] > window[1]:
+            return False
+        elif end_pos[0] < 0 or end_pos[0] > window[0]:
+            return False
+        elif end_pos[1] < 0 or end_pos[1] > window[1]:
+            return False
+        else:
+            continue
+
     return True
 
 
@@ -101,7 +158,7 @@ if __name__ == '__main__':
     testGoal = [(100, 100, 10)]
     resultDoesArmTouchGoals = [True, True, False]
 
-    testResults = [doesArmTickTouchGoals(testArmEnd, testGoal) for testArmEnd in testArmEnds]
+    testResults = [doesArmTipTouchGoals(testArmEnd, testGoal) for testArmEnd in testArmEnds]
     assert resultDoesArmTouchGoals == testResults
 
     testArmPoss = [((100,100), (135, 110)), ((135, 110), (150, 150))]
