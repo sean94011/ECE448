@@ -47,17 +47,19 @@ def bfs(maze):
     
     while queue:
         cur_path = queue.pop(0)
-        cur_pos = cur_path[len(cur_path)-1]
-        cur_row, cur_col = cur_pos
+        cur_pos = cur_path[-1]
+        cur_row, cur_col, cur_hei = cur_pos
 
         if cur_pos in visited:
             continue
         else:
-            for next_pos in maze.getNeighbors(cur_row,cur_col):
+            for next_pos in maze.getNeighbors(cur_row, cur_col, cur_hei):
+                if not maze.isValidMove(next_pos[0],next_pos[1],next_pos[2]):
+                    continue
                 temp_path = cur_path + [next_pos]
                 if next_pos in goal_pos:
                     return temp_path
                 queue.append(temp_path)
             visited.append(cur_pos)
-            
+
     return None

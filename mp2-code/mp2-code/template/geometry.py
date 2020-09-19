@@ -62,19 +62,19 @@ def doesArmTouchObjects(armPosDist, objects, isGoal=False):
             pad_dist = cur_link[2]
 
         for cur_object in objects:
-            object_pos = np.array([cur_object[0],cur_object[1]])
+            object_pos = np.array(cur_object[:-1])
 
             end_to_obj_vect = object_pos - end_pos
             start_to_obj_vect = object_pos - start_pos
 
             if np.inner(end_to_start_vect,end_to_obj_vect) <= 0:
-                link_obj_dist = math.sqrt(pow((end_pos[0]-object_pos[0]),2)+pow((end_pos[1]-object_pos[1]),2))
+                link_obj_dist = la.norm(end_to_obj_vect)
             elif np.inner(start_to_end_vect,start_to_obj_vect) <= 0:
-                link_obj_dist = math.sqrt(pow((start_pos[0]-object_pos[0]),2)+pow((start_pos[1]-object_pos[1]),2))
+                link_obj_dist = la.norm(start_to_obj_vect)
             else:
                 link_obj_dist = la.norm(np.cross(end_to_start_vect,end_to_obj_vect)) / la.norm(end_to_start_vect)
 
-            if link_obj_dist <= cur_object[2] + pad_dist:
+            if link_obj_dist <= cur_object[-1] + pad_dist:
                     return True
 
     return False
@@ -90,10 +90,11 @@ def doesArmTipTouchGoals(armEnd, goals):
     """
 
     for cur_goal in goals:
-        
-        if pow((cur_goal[0]-armEnd[0]),2) + pow((cur_goal[1]-armEnd[1]),2) <= pow(cur_goal[2],2):
+        dist = 0
+        for i in range(len(armEnd)):
+            dist += pow((cur_goal[i]-armEnd[i]),2)
+        if dist <= pow(cur_goal[-1],2):
             return True
-
     return False
 
 
